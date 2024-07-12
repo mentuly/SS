@@ -1,0 +1,51 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<h1>Weather Portal</h1>
+<form id="weather-form">
+    <div class="form-group">
+        <label for="city">City:</label>
+        <input type="text" class="form-control" id="city" placeholder="Enter city name" required>
+    </div>
+    <div class="form-group">
+        <label for="forecast_type">Forecast Type:</label>
+        <select class="form-control" id="forecast_type">
+            <option value="weather">Current Weather</option>
+            <option value="forecast">5-Day Forecast</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+</form>
+<div id="weather-result" class="mt-4"></div>
+
+<script>
+$(document).ready(function() {
+    $('#weather-form').on('submit', function(event) {
+        event.preventDefault();
+        const city = $('#city').val();
+        const forecast_type = $('#forecast_type').val();
+        
+        $.get(`/weather/${city}/${forecast_type}`, function(data) {
+            if (data.cod === 200) {
+                const weather = data.weather[0];
+                const main = data.main;
+
+                const resultHtml = `
+                    <h2>Weather in ${data.name}</h2>
+                    <p>Місто: ${data.name}</p>
+                    <p>Температура: ${main.temp} &deg;C</p>
+                    <p>Відчувається як: ${main.feels_like} &deg;C</p>
+                    <p>Опис: ${weather.description}</p>
+                `;
+
+                $('#weather-result').html(resultHtml);
+            } else {
+                $('#weather-result').html('<p class="text-danger">Error fetching weather data. Please try again.</p>');
+            }
+        }).fail(function() {
+            $('#weather-result').html('<p class="text-danger">Error fetching weather data. Please try again.</p>');
+        });
+    });
+});
+</script>
+{% endblock %}
