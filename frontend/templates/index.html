@@ -4,17 +4,17 @@
 <h1>Weather Portal</h1>
 <form id="weather-form">
     <div class="form-group">
-        <label for="city">City:</label>
-        <input type="text" class="form-control" id="city" placeholder="Enter city name" required>
+        <label for="city">Місто:</label>
+        <input type="text" class="form-control" id="city" placeholder="Введіть назву міста" required>
     </div>
     <div class="form-group">
-        <label for="forecast_type">Forecast Type:</label>
+        <label for="forecast_type">Тип прогнозу:</label>
         <select class="form-control" id="forecast_type">
-            <option value="weather">Current Weather</option>
-            <option value="forecast">5-Day Forecast</option>
+            <option value="weather">Погода на сьогодні</option>
+            <option value="forecast">Прогноз погоди на 5 днів</option>
         </select>
     </div>
-    <button type="submit" class="btn btn-primary">Search</button>
+    <button type="submit" class="btn btn-primary">Знайти</button>
 </form>
 <div id="weather-result" class="mt-4"></div>
 
@@ -26,24 +26,60 @@ $(document).ready(function() {
         const forecast_type = $('#forecast_type').val();
         
         $.get(`/weather/${city}/${forecast_type}`, function(data) {
-            if (data.cod === 200) {
-                const weather = data.weather[0];
-                const main = data.main;
+            if (forecast_type === "weather") {
+                if (data.cod === 200) {
+                    const weather = data.weather[0];
+                    const main = data.main;
 
-                const resultHtml = `
-                    <h2>Weather in ${data.name}</h2>
-                    <p>Місто: ${data.name}</p>
-                    <p>Температура: ${main.temp} &deg;C</p>
-                    <p>Відчувається як: ${main.feels_like} &deg;C</p>
-                    <p>Опис: ${weather.description}</p>
-                `;
+                    const resultHtml = `
+                        <h2>Weather in ${data.name}</h2>
+                        <p>Місто: ${data.name}</p>
+                        <p>Температура: ${main.temp} &deg;C</p>
+                        <p>Відчувається як: ${main.feels_like} &deg;C</p>
+                        <p>Опис: ${weather.description}</p>
+                    `;
 
-                $('#weather-result').html(resultHtml);
-            } else {
-                $('#weather-result').html('<p class="text-danger">Error fetching weather data. Please try again.</p>');
+                    $('#weather-result').html(resultHtml);
+                } else {
+                    $('#weather-result').html('<p class="text-danger">Помилка отримання даних про погоду. Будь ласка спробуйте ще раз.</p>');
+                }
+            } else if (forecast_type === "forecast") {
+                if (data.cod === "200") {
+                    const dailyData = {};
+                    data.list.forEach(forecast => {
+                        const date = new Date(forecast.dt * 1000).toLocaleDateString();
+                        if (!dailyData[date]) {
+                            dailyData[date] = { temps: [], feels_like: [], descriptions: [] };
+                        }
+                        dailyData[date].temps.push(forecast.main.temp);
+                        dailyData[date].feels_like.push(forecast.main.feels_like);
+                        dailyData[date].descriptions.push(forecast.weather[0].description);
+                    });
+
+                    let forecastHtml = `<h2>5-Day Weather Forecast for ${city}</h2>`;
+                    for (const [date, data] of Object.entries(dailyData)) {
+                        const avgTemp = (data.temps.reduce((a, b) => a + b, 0) / data.temps.length).toFixed(2);
+                        const avgFeelsLike = (data.feels_like.reduce((a, b) => a + b, 0) / data.feels_like.length).toFixed(2);
+                        const description = data.descriptions[0]; // Assuming the description remains the same for the day
+
+                        forecastHtml += `
+                            <div class="forecast-day">
+                                <h3>${date}</h3>
+                                <p>Температура: ${avgTemp} &deg;C</p>
+                                <p>Відчувається як: ${avgFeelsLike} &deg;C</p>
+                                <p>Опис: ${description}</p>
+                            </div>
+                            <hr>
+                        `;
+                    }
+
+                    $('#weather-result').html(forecastHtml);
+                } else {
+                    $('#weather-result').html('<p class="text-danger">Помилка отримання даних про погоду. Будь ласка спробуйте ще раз.</p>');
+                }
             }
         }).fail(function() {
-            $('#weather-result').html('<p class="text-danger">Error fetching weather data. Please try again.</p>');
+            $('#weather-result').html('<p class="text-danger">Помилка отримання даних про погоду. Будь ласка спробуйте ще раз.</p>');
         });
     });
 });
